@@ -786,7 +786,7 @@ err_gen  x_err_gen (
             $fwrite(FILE,"TEST FAIL");
 
             $finish;
-        end else if((cpu_awlen[3:0] == 4'b0) && (cpu_awaddr[31:0] == 32'h0008_f000) && cpu_wvalid && `clk_en) begin
+        end else if((cpu_awlen[3:0] == 4'b0) && (cpu_awaddr[31:0] == 32'h0008_fff0) && cpu_wvalid && `clk_en) begin
             if(cpu_wstrb[15:0] == 16'hf) begin
                 $write("%c",  biu_pad_wdata[7:0]);
             end else if(cpu_wstrb[15:0] == 16'hf0) begin
