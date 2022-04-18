@@ -1,5 +1,16 @@
 
 `ifdef FPGA 
+
+`define SYSMAP_BASE_ADDR0  28'h00080
+`define SYSMAP_FLG0        5'b01111
+
+`define SYSMAP_BASE_ADDR1  28'h000a0
+`define SYSMAP_FLG1        5'b10000
+
+`define SYSMAP_BASE_ADDR2  28'hd0000
+`define SYSMAP_FLG2        5'b11111
+
+/*
 `define SYSMAP_BASE_ADDR0  28'h01000
 `define SYSMAP_FLG0        5'b01111
 
@@ -8,7 +19,7 @@
 
 `define SYSMAP_BASE_ADDR2  28'hd0000
 `define SYSMAP_FLG2        5'b10000
-
+*/
 `define SYSMAP_BASE_ADDR3  28'heffff
 `define SYSMAP_FLG3        5'b01101
 

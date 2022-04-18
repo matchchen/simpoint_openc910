@@ -14,7 +14,8 @@ limitations under the License.
 */
 #include <stdio.h>
 
-#define C9xx_LOG_PRINT_ADDR  ((int *)0x01fffff0)
+//#define C9xx_LOG_PRINT_ADDR  ((int *)0x01fffff0)
+#define C9xx_LOG_PRINT_ADDR  ((int *)0x0008f000)
 
 // extern void uart_putc(unsigned char ch);
 
@@ -24,7 +25,7 @@ int fputc(int ch, FILE *stream)
   volatile int* addr_ptr;
   addr_ptr = C9xx_LOG_PRINT_ADDR;
   *(addr_ptr) = ch;
-
+  // asm volatile (".word 0x0150000b \n\t"); //l2cache.call
 
   // uart_putc((unsigned char)ch);
 

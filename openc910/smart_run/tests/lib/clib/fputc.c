@@ -14,7 +14,8 @@ limitations under the License.
 */
 #include <stdio.h>
 
-#define C9xx_LOG_PRINT_ADDR  ((int *)0x01fffff0)
+//#define C9xx_LOG_PRINT_ADDR  ((int *)0x01fffff0)
+#define C9xx_LOG_PRINT_ADDR  ((int *)0x0008f000)
 
 int fputc(int ch, FILE *stream)
 {
