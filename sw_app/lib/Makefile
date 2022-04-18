@@ -14,7 +14,7 @@
 #*/
 
 # set the toolchain dir according to your installation
-TOOL_EXTENSION := /opt/riscv64-tools-install/bin
+TOOL_EXTENSION := /home/user/toolchain/bin
 
 CC      = ${TOOL_EXTENSION}/riscv64-unknown-elf-gcc
 AS      = ${TOOL_EXTENSION}/riscv64-unknown-elf-as
@@ -82,7 +82,7 @@ ${FILE}.vmem: ${FILE}.bin
 
 
 ${FILE}.dump: ${FILE}.elf
-	$(OBJDUMP) --disassemble-all $< > $@
+	$(OBJDUMP) -S -C -l $< > $@
 
 INST_HEX = ${FILE}_inst.hex
 DATA_HEX = ${FILE}_data.hex
