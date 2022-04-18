@@ -599,7 +599,7 @@ $(VERILOG_OBJ_DIR):
 # covert the verilog file into the cpp file
 $(VERILOG_OBJ_DIR)/V$(TOP_MOD).cpp: $(VERILOG_FILES)
 	@echo "===================compile RTL into cpp files, start=========================="
-	$(VERILATOR) $(VFLAGS) -I$(INC_DIR) --top-module $(TOP_MOD) $(VERILOG_FILES) V$(TOP_MOD).cpp
+	$(VERILATOR) $(VFLAGS) -j 4 --build -I$(INC_DIR) --top-module $(TOP_MOD) $(VERILOG_FILES) V$(TOP_MOD).cpp
 	@echo "===================compile RTL into cpp files, end ==========================="
 
 # create the c++ lib from the above cpp file
