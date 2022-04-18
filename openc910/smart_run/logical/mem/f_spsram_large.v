@@ -165,6 +165,26 @@ always@(posedge CLK)
 begin
   if(!CEN) begin
     addr_holding[ADDR_WIDTH-1:0] <= A[ADDR_WIDTH-1:0];
+/*
+      if (A[ADDR_WIDTH-1:0] == 21'h0_8fff) begin
+          if (!WEN[0]) $write("%c",D[7:0]);
+          if (!WEN[1]) $write("%c",D[15:8]);
+          if (!WEN[2]) $write("%c",D[23:16]);
+          if (!WEN[3]) $write("%c",D[31:24]);
+          if (!WEN[4]) $write("%c",D[39:32]);
+          if (!WEN[5]) $write("%c",D[47:40]);
+          if (!WEN[6]) $write("%c",D[55:48]);
+          if (!WEN[7]) $write("%c",D[63:56]);
+          if (!WEN[8]) $write("%c",D[71:64]);
+          if (!WEN[9]) $write("%c",D[80:72]);
+          if (!WEN[10]) $write("%c",D[87:81]);
+          if (!WEN[11]) $write("%c",D[95:88]);
+          if (!WEN[12]) $write("%c",D[103:96]);
+          if (!WEN[13]) $write("%c",D[111:104]);
+          if (!WEN[14]) $write("%c",D[119:112]);
+          if (!WEN[15]) $write("%c",D[127:120]);
+      end
+*/
   end
 end
 
