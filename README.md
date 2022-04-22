@@ -10,6 +10,6 @@ modified openc910 for the simpoint purpose, some changess to the original openc9
 
 (4) supported to load vmem file into memory
 
-# tag 0.1
+# v0.1
 1. modify putc address
 2. add "--i <n>" command argument to statistic cycle/instnum and host time
