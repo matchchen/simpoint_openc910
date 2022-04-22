@@ -50,6 +50,7 @@ int main(int argc,  char ** argv)
     }
 
     unsigned char ucLoadType = 0;
+    long instrNum = 0;
     if(strncasecmp(argv[1],"--bin",strlen("--bin")) == 0)
     {
         ucLoadType = 1;  //filename = argv[2]
@@ -70,6 +71,20 @@ int main(int argc,  char ** argv)
         return -1;
     }
 
+    if((ucLoadType < 3 && argc > 3) || (ucLoadType == 3 && argc > 4)) // run instrution number
+    {
+        if (strncasecmp(argv[ucLoadType/3 + 3],"--i",strlen("--i")) == 0)
+        {
+            //printf("Set instructions: %s \r\n",argv[ucLoadType/3 + 4]);
+            instrNum = atoi(argv[ucLoadType/3 + 4]);
+            printf("Set instructions: %s;%d \r\n",argv[ucLoadType/3 + 4],instrNum);
+        }else{
+            printf("usage: %s --bin bin_file --i <n> \r\n", argv[0]);
+            printf("\tExample: %s --bin hello_world.bin --i 1000 \r\n", argv[0]);
+            return -1;
+        }
+
+    }
     // call commandArgs first!
     VerilatedContext* contextp = new VerilatedContext;
     Verilated::commandArgs(argc, argv);
@@ -130,6 +145,10 @@ int main(int argc,  char ** argv)
     // then the scope could be set with
     // svSetScope(svGetScopeFromName("TOP.dut"));
 
+    int recordStatus = 0; //0:not start 1:running 2:ending
+    unsigned long cycleCnt = 0;//simutil_read_mcycle();
+    unsigned long instrCnt = 0;//simutil_read_minstret();
+    time_t now = time(0); //system time , seconds
 
     while(!contextp->gotFinish())
     {
@@ -240,6 +259,30 @@ int main(int argc,  char ** argv)
         {
 	        m_trace->dump(m_cpu_tickcount*10);   //  Tick every 10 ns
 	    }
+
+        if (instrNum > 0){
+            svSetScope(svGetScopeFromName("TOP.soc.x_cpu_sub_system_axi.x_rv_integration_platform.x_cpu_top.x_ct_top_0.x_ct_hpcp_top"));
+
+            if (recordStatus == 0){
+                instrCnt = simutil_read_minstret();
+                if (instrCnt > 0){ //sample from some instructions retired
+                    cycleCnt = simutil_read_mcycle();
+                    now = time(0);
+                    printf("Start: cycleCnt=%ld,instrCnt=%ld,now=%ld\r\n",cycleCnt,instrCnt,now);
+                    recordStatus = 1;
+                }
+            }else if(recordStatus == 1){    
+                if (m_cpu_tickcount % 1000 == 0){ //sample per 1000 tick
+                    instrCnt = simutil_read_minstret();
+                    if (instrCnt >= instrNum){
+                        cycleCnt = simutil_read_mcycle();
+                        now = time(0);
+                        printf("\r\nEnd: cycleCnt=%ld,instrCnt=%ld,now=%ld\r\n",cycleCnt,instrCnt,now);
+                        recordStatus = 2;
+                    }                
+                }
+            }
+        }
 
 #ifdef  UART_SUPPORTED
         if(m_cpu_tickcount>80)   //skip the reset process

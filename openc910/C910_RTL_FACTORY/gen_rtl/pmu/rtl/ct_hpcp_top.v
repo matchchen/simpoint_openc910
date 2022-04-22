@@ -4398,6 +4398,19 @@ assign hpcp_lsu_cnt_en  = hpcp_xx_cnt_en;
 // &Force("nonport","mcntwen_hit"); @1995
 
 // &ModuleEnd; @2160
+    export "DPI-C" function simutil_read_minstret;
+
+    function longint unsigned simutil_read_minstret();
+      longint unsigned val = minstret_value[63:0];
+      return val;
+    endfunction
+
+    export "DPI-C" function simutil_read_mcycle;
+
+    function longint unsigned simutil_read_mcycle();
+      longint unsigned val = mcycle_value[63:0];
+      return val;
+    endfunction
 endmodule
 
 
