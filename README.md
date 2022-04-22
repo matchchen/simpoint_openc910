@@ -12,4 +12,4 @@ modified openc910 for the simpoint purpose, some changess to the original openc9
 
 # v0.1
 1. modify putc address
-2. add "--i <n>" command argument to statistic cycle/instnum and host time
+2. add "--i \<n\>" command argument to statistic cycle/instnum and host time
