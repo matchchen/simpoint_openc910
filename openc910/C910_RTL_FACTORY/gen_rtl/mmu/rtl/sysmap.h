@@ -8,7 +8,7 @@
 `define SYSMAP_FLG1        5'b10000
 
 `define SYSMAP_BASE_ADDR2  28'hd0000
-`define SYSMAP_FLG2        5'b11111
+`define SYSMAP_FLG2        5'b01111
 
 /*
 `define SYSMAP_BASE_ADDR0  28'h01000
