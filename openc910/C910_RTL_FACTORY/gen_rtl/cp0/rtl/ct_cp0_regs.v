@@ -4389,6 +4389,19 @@ assign cp0_pad_mstatus[63:0] = mstatus_value[63:0];
 
 
 // &ModuleEnd; @4181
+
+   export "DPI-C" function simutil_read_mepc;
+   function longint unsigned simutil_read_mepc();
+          longint unsigned val = mepc_value[63:0];
+          return val;
+   endfunction
+
+   export "DPI-C" function simutil_read_mcause;
+   function longint unsigned simutil_read_mcause();
+           longint unsigned val = mcause_value[63:0];
+           return val;
+   endfunction
+
 endmodule
 
 

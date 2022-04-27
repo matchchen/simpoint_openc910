@@ -5171,6 +5171,25 @@ ct_rtu_top  x_ct_rtu_top (
 //&Shell("../../../tools/scripts/delt_core_port");
 
 // &ModuleEnd; @91
+
+   export "DPI-C" function simutil_read_rtu_pad_retire0_pc;
+   function longint unsigned simutil_read_rtu_pad_retire0_pc();
+          longint unsigned val = rtu_pad_retire0_pc[39:0];
+          return val;
+   endfunction
+
+   export "DPI-C" function simutil_read_rtu_pad_retire1_pc;
+   function longint unsigned simutil_read_rtu_pad_retire1_pc();
+           longint unsigned val = rtu_pad_retire1_pc[39:0];
+           return val;
+   endfunction
+
+   export "DPI-C" function simutil_read_rtu_pad_retire2_pc;
+   function longint unsigned simutil_read_rtu_pad_retire2_pc();
+           longint unsigned val = rtu_pad_retire2_pc[39:0];
+           return val;
+   endfunction
+
 endmodule
 
 

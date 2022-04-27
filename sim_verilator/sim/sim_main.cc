@@ -51,6 +51,7 @@ int main(int argc,  char ** argv)
 
     unsigned char ucLoadType = 0;
     long instrNum = 0;
+    unsigned long debugLogIntv = 0; //ticks
     if(strncasecmp(argv[1],"--bin",strlen("--bin")) == 0)
     {
         ucLoadType = 1;  //filename = argv[2]
@@ -73,17 +74,30 @@ int main(int argc,  char ** argv)
 
     if((ucLoadType < 3 && argc > 3) || (ucLoadType == 3 && argc > 4)) // run instrution number
     {
-        if (strncasecmp(argv[ucLoadType/3 + 3],"--i",strlen("--i")) == 0)
+        for (int i = (ucLoadType/3 + 3); i < argc; i++)
         {
-            //printf("Set instructions: %s \r\n",argv[ucLoadType/3 + 4]);
-            instrNum = atoi(argv[ucLoadType/3 + 4]);
-            printf("Set instructions: %s;%d \r\n",argv[ucLoadType/3 + 4],instrNum);
-        }else{
-            printf("usage: %s --bin bin_file --i <n> \r\n", argv[0]);
-            printf("\tExample: %s --bin hello_world.bin --i 1000 \r\n", argv[0]);
-            return -1;
+            if (strncasecmp(argv[i],"--debug-intv",strlen("--debug-intv")) == 0)
+            {
+                debugLogIntv = atoi(argv[i+1]);
+                printf("Set debug log interval:%ld ticks\r\n",debugLogIntv);
+                i++;
+            }
+            else if (strncasecmp(argv[i],"--i",strlen("--i")) == 0)
+            {
+                instrNum = atoi(argv[i+1]);
+                printf("Set instructions: %s;%d \r\n",argv[i+1],instrNum);
+                i++;
+            }
+            else if ((strncasecmp(argv[i],"+vcd",strlen("+vcd")) == 0) || (strncasecmp(argv[i],"+trace",strlen("+trace")) == 0))
+            {
+            }
+            else
+            {
+                printf("usage: %s --bin bin_file --i <n> --debug-intv <t> +vcd +trace \r\n", argv[0]);
+                printf("\tExample: %s --bin hello_world.bin --i 1000 --debug-intv 1000 +vcd +trace \r\n", argv[0]);
+                return -1;
+            }
         }
-
     }
     // call commandArgs first!
     VerilatedContext* contextp = new VerilatedContext;
@@ -118,6 +132,12 @@ int main(int argc,  char ** argv)
         trace_fd = fopen("./log/tb.trace", "w");
     }
 
+    FILE * debug_fd = NULL;
+    if (debugLogIntv > 0)
+    {
+        debug_fd = fopen("./log/tb.debug", "w");
+    }
+
     int m_cpu_tickcount = 0;
     int m_jtag_tickcount = 0;
 
@@ -149,6 +169,11 @@ int main(int argc,  char ** argv)
     unsigned long cycleCnt = 0;//simutil_read_mcycle();
     unsigned long instrCnt = 0;//simutil_read_minstret();
     time_t now = time(0); //system time , seconds
+    unsigned long mepcValue = 0;//simutil_read_mepc()
+    unsigned long mcauseValue = 0;//simutil_read_mcause()
+    unsigned long curPC0 = 0;//simutil_read_rtu_pad_retire0_pc()
+    unsigned long curPC1 = 0;//simutil_read_rtu_pad_retire1_pc()
+    unsigned long curPC2 = 0;//simutil_read_rtu_pad_retire2_pc()
 
     while(!contextp->gotFinish())
     {
@@ -284,6 +309,23 @@ int main(int argc,  char ** argv)
             }
         }
 
+        if (debugLogIntv > 0)
+        {
+            if (m_cpu_tickcount % debugLogIntv == 0)
+            {
+                svSetScope(svGetScopeFromName("TOP.soc.x_cpu_sub_system_axi.x_rv_integration_platform.x_cpu_top.x_ct_top_0.x_ct_core.x_ct_cp0_top.x_ct_cp0_regs"));
+                mepcValue = simutil_read_mepc();
+                mcauseValue = simutil_read_mcause();
+                svSetScope(svGetScopeFromName("TOP.soc.x_cpu_sub_system_axi.x_rv_integration_platform.x_cpu_top.x_ct_top_0.x_ct_core"));
+                curPC0 = simutil_read_rtu_pad_retire0_pc();
+                curPC1 = simutil_read_rtu_pad_retire1_pc();
+                curPC2 = simutil_read_rtu_pad_retire2_pc();
+                now = time(0);
+                //printf("now=%ld,tickcount=%ld,mepc=0x%llx,mcause=0x%llx,retire0_pc=0x%llx,retire1_pc=0x%llx,retire2_pc=0x%llx\r\n", now,m_cpu_tickcount,mepcValue,mcauseValue,curPC0,curPC1,curPC2);
+                fprintf(debug_fd, "now=%ld,tickcount=%ld,mepc=0x%llx,mcause=0x%llx,retire0_pc=0x%llx,retire1_pc=0x%llx,retire2_pc=0x%llx\r\n", now,m_cpu_tickcount,mepcValue,mcauseValue,curPC0,curPC1,curPC2);
+            }
+        }
+
 #ifdef  UART_SUPPORTED
         if(m_cpu_tickcount>80)   //skip the reset process
         {
@@ -300,6 +342,11 @@ int main(int argc,  char ** argv)
         }
 
         m_cpu_tickcount++;
+    }
+
+    if (debugLogIntv > 0)
+    {
+       fclose(debug_fd);
     }
 
     if(m_trace)
