@@ -553,15 +553,14 @@ SOC_FILES := \
 	$(LOGICAL_BASE_PATH)/uart/uart_ctrl.v                        \
 	$(LOGICAL_BASE_PATH)/uart/uart_receive.v                     \
 	$(LOGICAL_BASE_PATH)/uart/uart_trans.v                       \
-	$(LOGICAL_BASE_PATH)/uart/uart.v
-
-#	$(LOGICAL_BASE_PATH)/tb/tb_verilator.v
-#	$(LOGICAL_BASE_PATH)/tb/int_mnt.v
+	$(LOGICAL_BASE_PATH)/uart/uart.v                             \
+	$(LOGICAL_BASE_PATH)/tb/tb_verilator.v                       \
+	$(LOGICAL_BASE_PATH)/tb/int_mnt.v
 #	$(LOGICAL_BASE_PATH)/tb/tb.v
 #   $(LOGICAL_BASE_PATH)/common/BUFGCE.v
 
 # for verilator_tb, it should be set to top, otherwise it should be soc
-TOP_MOD := soc
+TOP_MOD := top
 
 VERILOG_FILES := $(CPU_TILE_FILES) \
 	$(SOC_FILES)
@@ -579,7 +578,7 @@ VERILATOR = verilator
 #-D<macro>
 
 # VFLAGS := --cc -trace -Wall
-VFLAGS := --cc -trace -Wno-style -Wno-lint -Wno-IMPLICIT -Wno-WIDTH -Wno-CASEINCOMPLETE -Wno-WIDTHCONCAT -Wno-UNOPTFLAT -Wno-UNSIGNED  -Wno-MULTIDRIVEN -Wno-COMBDLY #-I$(TB_DIR)
+VFLAGS := --cc -trace -Wno-fatal -Wno-style -Wno-lint -Wno-IMPLICIT -Wno-WIDTH -Wno-CASEINCOMPLETE -Wno-WIDTHCONCAT -Wno-UNOPTFLAT -Wno-UNSIGNED  -Wno-MULTIDRIVEN -Wno-COMBDLY #-I$(TB_DIR)
 
 INC_DIR :=${CODE_BASE_PATH}/gen_rtl/cpu/rtl
 

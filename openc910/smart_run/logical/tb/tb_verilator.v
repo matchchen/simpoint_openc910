@@ -133,6 +133,7 @@ module top(
     else if(jrstCnt > 80) jrst_b = 1;
   end
 
+/*
   integer i;
   bit [31:0] mem_inst_temp [65536];
   bit [31:0] mem_data_temp [65536];
@@ -216,7 +217,7 @@ module top(
       j = j+1;
     end
   end
-
+*/
   integer clkCnt;
   always@(posedge clk) begin
     clkCnt = clkCnt + 1;
@@ -355,7 +356,7 @@ module top(
   end
 
 
-
+/*
   parameter cpu_cycle = 110;
   `ifndef NO_DUMP
   initial
@@ -374,7 +375,7 @@ module top(
   `endif
   end
   `endif
-
+*/
   assign jtg_tdi = 1'b0;
   assign uart0_sin = 1'b1;
 

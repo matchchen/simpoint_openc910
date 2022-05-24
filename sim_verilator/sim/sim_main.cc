@@ -7,11 +7,9 @@
 
 #include <verilated.h>
 #include "verilated_vcd_c.h"
-#include "Vsoc.h"
-#include "Vsoc__Dpi.h"   //auto created by the verilator from the rtl that support dpi
+#include "Vtop.h"
+#include "Vtop__Dpi.h"   //auto created by the verilator from the rtl that support dpi
 
-#include "uartsim.h"
-#include "remote_bitbang.h"
 
 /*
   =========================================================================
@@ -29,8 +27,6 @@
 
   ============================================================================
 */
-
-#define APB_FREQ			100000000L   /* MHz */
 
 int main(int argc,  char ** argv)
 {
@@ -110,7 +106,7 @@ int main(int argc,  char ** argv)
     Verilated::mkdir("./log");
 
     // Instantiate our design
-    Vsoc * ptTB = new Vsoc;
+    Vtop * ptTB = new Vtop;
 
     // Tracing (vcd)
     VerilatedVcdC * m_trace = NULL;
@@ -123,15 +119,6 @@ int main(int argc,  char ** argv)
         m_trace->open("./log/tb.vcd");
     }
 
-    FILE * trace_fd = NULL;
-    // If verilator was invoked with --trace argument,
-    // and if at run time passed the +trace argument, turn on tracing
-    const char* flag_trace = Verilated::commandArgsPlusMatch("trace");
-    if (flag_trace && 0==strcmp(flag_trace, "+trace"))
-    {
-        trace_fd = fopen("./log/tb.trace", "w");
-    }
-
     FILE * debug_fd = NULL;
     if (debugLogIntv > 0)
     {
@@ -139,23 +126,6 @@ int main(int argc,  char ** argv)
     }
 
     int m_cpu_tickcount = 0;
-    int m_jtag_tickcount = 0;
-
-    //jtag
-#ifdef  JTAG_SUPPORTED
-    remote_bitbang_t * jtag = NULL;
-    jtag = new remote_bitbang_t(9823);
-#endif
-
-    //uart
-#ifdef  UART_SUPPORTED
-    UARTSIM  * uart = NULL;
-    uart = new(UARTSIM);
-    unsigned int  baud_rate = 19200;
-    unsigned int baud_div;
-    baud_div = (uint32_t)((APB_FREQ/baud_rate) >> 4);
-    uart->setup(baud_div);
-#endif
 
     // Note that if the DPI task or function accesses any register or net within the RTL,
     // it will require a scope to be set. This can be done using the standard functions within svdpi.h,
@@ -175,118 +145,100 @@ int main(int argc,  char ** argv)
     unsigned long curPC1 = 0;//simutil_read_rtu_pad_retire1_pc()
     unsigned long curPC2 = 0;//simutil_read_rtu_pad_retire2_pc()
 
-    while(!contextp->gotFinish())
+    //it is time to load the memory
+    // tb.x_soc.x_axi_slave128.x_f_spsram_large
+    svSetScope(svGetScopeFromName("TOP.top.x_soc.x_axi_slave128.x_f_spsram_large"));
+
+    switch (ucLoadType)
     {
-        //cpu reset
-        if(m_cpu_tickcount<10)
+        case 1:  //load bin, argv2
         {
-            ptTB->i_pad_rst_b = 1;
-        }
-        else if( (m_cpu_tickcount>=10) && (m_cpu_tickcount<20))
-        {
-            ptTB->i_pad_rst_b = 0;   // reset the cpu
-        }
-        else
-        {
-            if(ptTB->i_pad_rst_b == 0)
-                printf("reset the cpu,done \n");
-            ptTB->i_pad_rst_b = 1;
-        }
-
-        //jtag reset
-        if(m_cpu_tickcount%4 == 0)
-        {
-            m_jtag_tickcount += 1;
-        }
-
-        if(m_jtag_tickcount<10)
-        {
-            ptTB->i_pad_jtg_trst_b = 1;
-        }
-        else if( (m_jtag_tickcount>=10) && (m_jtag_tickcount<20))
-        {
-            ptTB->i_pad_jtg_trst_b = 0;   // reset the jtag
-        }
-        else
-        {
-            if(ptTB->i_pad_jtg_trst_b == 0)
+            unsigned int  mem_index=0, addr_index=0;
+            unsigned char buffer[16] = {0};
+            size_t iread_bytes = 0;
+            // open the bin file to read
+            // you can read the bin file in liuux with: xxd ./work/hello_world.bin
+            FILE * fp;
+            fp = fopen(argv[2], "rb");  // r for read, b for binary
+            if(fp == NULL)
             {
-                printf("reset the jtag,done \n");
-                //it is time to load the memory
-                // tb.x_soc.x_axi_slave128.x_f_spsram_large
-                svSetScope(svGetScopeFromName("TOP.soc.x_axi_slave128.x_f_spsram_large"));
+                printf("open file (%s) failed, please check it \r\n", argv[2]);
+                exit(-1);
+            }
 
-                switch (ucLoadType)
+            printf("\t********* Wipe memory to 0 *********\r\n");
+            for (int i=0;i<0x100000;i++) //1MB*16
+            {
+                for(mem_index=0; mem_index < 16; mem_index++)
                 {
-                    case 1:  //load bin, argv2
-                    {
-                        unsigned int  mem_index=0, addr_index=0;
-                        unsigned char buffer[16] = {0};
-                        size_t iread_bytes = 0;
-                        // open the bin file to read
-                        // you can read the bin file in liuux with: xxd ./work/hello_world.bin
-                        FILE * fp;
-                        fp = fopen(argv[2], "rb");  // r for read, b for binary
-                        if(fp == NULL)
-                        {
-                            printf("open file (%s) failed, please check it \r\n", argv[2]);
-                            exit(-1);
-                        }
-                        printf("start to load file (%s) into memory \r\n", argv[2]);
-                        fseek(fp, 0, SEEK_SET);
-                        iread_bytes = fread(buffer, sizeof(unsigned char), 16, fp); // read 16 bytes to our buffer
-                        // write the byte to the memory
-                        while(iread_bytes == 16)
-                        {
-                            for(mem_index=0; mem_index < iread_bytes; mem_index++)
-                            {
-                                simutil_write_memory(mem_index, addr_index, buffer[mem_index]);
-                            }
-                            addr_index ++;
-                            iread_bytes = fread(buffer, sizeof(unsigned char), 16, fp); // read another 16 bytes to our buffer
-                        }
-                        printf("loaded file (%s) into memory successfully\r\n", argv[2]);
-                    }
-                    break;
-
-                    case 2:  //load vmem, argv2
-                    {
-                        simutil_load_inst(argv[2]);
-                    }
-                    break;
-
-                    case 3:  //load segment, inst, argv2 & argv3
-                    {
-                        simutil_load_inst_data(argv[2], argv[3]);
-                    }
-                    break;
-
-                    default:
-                    {
-                        return -1;
-                    }
-                    break;
+                    simutil_write_memory(mem_index, i, 0);
                 }
             }
-            ptTB->i_pad_jtg_trst_b = 1;
+
+            printf("start to load file (%s) into memory \r\n", argv[2]);
+            fseek(fp, 0, SEEK_SET);
+            iread_bytes = fread(buffer, sizeof(unsigned char), 16, fp); // read 16 bytes to our buffer
+            // write the byte to the memory
+            while(iread_bytes == 16)
+            {
+                for(mem_index=0; mem_index < iread_bytes; mem_index++)
+                {
+                    simutil_write_memory(mem_index, addr_index, buffer[mem_index]);
+                }
+                addr_index ++;
+                iread_bytes = fread(buffer, sizeof(unsigned char), 16, fp); // read another 16 bytes to our buffer
+            }
+            printf("loaded bytes (0x%llx), leave bytes(%d)\r\n",addr_index*16,iread_bytes);
+            printf("loaded file (%s) into memory successfully\r\n", argv[2]);
         }
+        break;
 
-        ptTB->i_pad_clk = 1;
-
-#ifdef  JTAG_SUPPORTED
-        if(m_cpu_tickcount%2 == 0 && m_jtag_tickcount>20)
+        case 2:  //load vmem, argv2
         {
-            jtag->tick(&(ptTB->i_pad_jtg_tclk), &(ptTB->i_pad_jtg_tms), &(ptTB->i_pad_jtg_tdi), &(ptTB->i_pad_jtg_trst_b), /*&(ptTB->sysrstn), */ ptTB->o_pad_jtg_tdo);
+            simutil_load_inst(argv[2]);
         }
-#endif
+        break;
+
+        case 3:  //load segment, inst, argv2 & argv3
+        {
+            simutil_load_inst_data(argv[2], argv[3]);
+        }
+        break;
+
+        default:
+        {
+            return -1;
+        }
+        break;
+    }
+
+    ptTB->clk = 0;
+    int reseting = 1;
+
+    while(!contextp->gotFinish())
+    {
+        if (reseting)
+        {
+            for (int i=1;i<43;i++) //wait 43 clock to reset
+            {
+                ptTB->clk = !ptTB->clk;
+                ptTB->eval();
+            }
+            reseting = 0;
+        }
+//        contextp->timeInc(1);  // 1 timeprecision period passes...
+
+
+        // Toggle a fast (time/2 period) clock
+        ptTB->clk = !ptTB->clk;
         ptTB->eval();
         if(m_trace)
         {
-	        m_trace->dump(m_cpu_tickcount*10);   //  Tick every 10 ns
+	        m_trace->dump(m_cpu_tickcount*2);   //  Tick every 
 	    }
 
         if (instrNum > 0){
-            svSetScope(svGetScopeFromName("TOP.soc.x_cpu_sub_system_axi.x_rv_integration_platform.x_cpu_top.x_ct_top_0.x_ct_hpcp_top"));
+            svSetScope(svGetScopeFromName("TOP.top.x_soc.x_cpu_sub_system_axi.x_rv_integration_platform.x_cpu_top.x_ct_top_0.x_ct_hpcp_top"));
 
             if (recordStatus == 0){
                 instrCnt = simutil_read_minstret();
@@ -313,10 +265,10 @@ int main(int argc,  char ** argv)
         {
             if (m_cpu_tickcount % debugLogIntv == 0)
             {
-                svSetScope(svGetScopeFromName("TOP.soc.x_cpu_sub_system_axi.x_rv_integration_platform.x_cpu_top.x_ct_top_0.x_ct_core.x_ct_cp0_top.x_ct_cp0_regs"));
+                svSetScope(svGetScopeFromName("TOP.top.x_soc.x_cpu_sub_system_axi.x_rv_integration_platform.x_cpu_top.x_ct_top_0.x_ct_core.x_ct_cp0_top.x_ct_cp0_regs"));
                 mepcValue = simutil_read_mepc();
                 mcauseValue = simutil_read_mcause();
-                svSetScope(svGetScopeFromName("TOP.soc.x_cpu_sub_system_axi.x_rv_integration_platform.x_cpu_top.x_ct_top_0.x_ct_core"));
+                svSetScope(svGetScopeFromName("TOP.top.x_soc.x_cpu_sub_system_axi.x_rv_integration_platform.x_cpu_top.x_ct_top_0.x_ct_core"));
                 curPC0 = simutil_read_rtu_pad_retire0_pc();
                 curPC1 = simutil_read_rtu_pad_retire1_pc();
                 curPC2 = simutil_read_rtu_pad_retire2_pc();
@@ -326,18 +278,12 @@ int main(int argc,  char ** argv)
             }
         }
 
-#ifdef  UART_SUPPORTED
-        if(m_cpu_tickcount>80)   //skip the reset process
-        {
-            ptTB->i_pad_uart0_sin = (*uart)(ptTB->o_pad_uart0_sout);  //get the uart_tx and sent the char via rx_pin to riscv cpu
-        }
-#endif
-
-        ptTB->i_pad_clk = 0;
+        // Toggle a fast (time/2 period) clock
+        ptTB->clk = !ptTB->clk;
         ptTB->eval();
         if(m_trace)
         {
-            m_trace->dump(m_cpu_tickcount*10+5);   // Trailing edge dump
+            m_trace->dump(m_cpu_tickcount*2+1);   // Trailing edge dump
             m_trace->flush();
         }
 
@@ -355,11 +301,6 @@ int main(int argc,  char ** argv)
         m_trace->close();
     }
 
-    if(trace_fd)
-    {
-        fflush(trace_fd);
-        fclose(trace_fd);
-    }
 
 #if VM_COVERAGE
     VerilatedCov::write("log/coverage.dat");
@@ -367,13 +308,6 @@ int main(int argc,  char ** argv)
 
     delete ptTB;
 
-#ifdef  JTAG_SUPPORTED
-    delete jtag;
-#endif
-
-#ifdef  UART_SUPPORTED
-    delete jtag;
-#endif
     exit(0);
 }
 
