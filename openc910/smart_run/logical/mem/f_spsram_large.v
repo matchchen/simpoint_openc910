@@ -44,7 +44,8 @@ module f_spsram_large(
   WEN
 );
 
-parameter ADDR_WIDTH = 21;	// 2MB per ram, 16MB at all for f_spsram_large
+//parameter ADDR_WIDTH = 21;	// 2MB per ram, 16MB at all for f_spsram_large
+parameter ADDR_WIDTH = 26;	// 64MB per ram, 16*64=1GB at all for f_spsram_large
 parameter WRAP_WIDTH = 8;
 
 parameter  MEMDEPTH = 2**(ADDR_WIDTH);
@@ -330,8 +331,8 @@ ram #(WRAP_WIDTH,ADDR_WIDTH) ram15(
         integer i;
         integer j;
 
-        bit [31:0] mem_inst_temp [65536];
-        bit [31:0] mem_data_temp [65536];
+        bit [31:0] mem_inst_temp [65536];//4*64KB
+        bit [31:0] mem_data_temp [65536];//4*64KB
 
         $readmemh(file1, mem_inst_temp);
         $readmemh(file2, mem_data_temp);

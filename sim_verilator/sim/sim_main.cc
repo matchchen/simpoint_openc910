@@ -167,7 +167,7 @@ int main(int argc,  char ** argv)
             }
 
             printf("\t********* Wipe memory to 0 *********\r\n");
-            for (int i=0;i<0x100000;i++) //1MB*16
+            for (long long i=0;i<0x4000000;i++) //64MB*16
             {
                 for(mem_index=0; mem_index < 16; mem_index++)
                 {
