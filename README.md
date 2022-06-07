@@ -14,3 +14,6 @@ modified openc910 for the simpoint purpose, some changess to the original openc9
 1. modify putc address
 2. add "--i \<n\>" command argument to statistic cycle/instnum and host time
 3. add "--debug-intv \<n\>" command argument for inst trace
+# v0.2
+1. move c wrapper from soc level to tb level
+2. extend memory size to 1GiB
